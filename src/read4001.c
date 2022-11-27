@@ -39,7 +39,7 @@ typedef unsigned short word;
 #define DIN2  20
 #define DIN3  21
 
-//#define CLOCK_kHz 570 /* 500 to 740 (kHz)*/
+//#define CLOCK_kHz 10000 /* 500 to 740 (kHz)*/
 #define CLOCK_kHz 740 /* 500 to 740 (kHz)*/
 #define Tcy_ns (1000000 / CLOCK_kHz) /* Clock Period (1.35 to 2.0 usec)*/
 #define Tunit_ns (Tcy_ns / 7)
@@ -56,6 +56,7 @@ void delayNanoseconds(unsigned int howLong)
     tEnd.tv_sec++;
     tEnd.tv_nsec -= 1000000000L;
   }
+  return;
   do{
     clock_gettime(CLOCK_MONOTONIC, &tNow);
   } while ( (tNow.tv_sec == tEnd.tv_sec) ?
@@ -173,7 +174,7 @@ void  setPhase(int p){
   if(p == 0){
     Negate(CLK2);
   }
-  delayNanoseconds(Tunit_ns);
+  //delayNanoseconds(Tunit_ns);
 }
 
 void  initCycle(){
@@ -209,10 +210,10 @@ void cycleA3(byte chipnumber){
 }
 
 void cycleM1(byte *data){
+  setData(0);
   for(int i = 0; i < 7; i++){
     setPhase(i);
     if(i == 0){
-      setData(0);
       Negate(CM);
     }
     if(i == 5){
@@ -231,12 +232,14 @@ void cycleM2(byte *data){
 }
 
 void cycleX1(){
+  setData(0);
   for(int i = 0; i < 7; i++){
     setPhase(i);
   }
 }
 
 void cycleX2(){
+  setData(0);
   for(int i = 0; i < 7; i++){
     setPhase(i);
   }
@@ -260,7 +263,6 @@ byte readMemory(byte chipnumber, byte address){
   cycleX1();
   cycleX2();
   cycleX3();
-
   return(data);
 }
 
@@ -288,11 +290,11 @@ int main(int argc, char *argv[]){
   initGPIO();
   
   if(initInterrupt() !=0){
-    fprintf(stderr, "initInterrupt() failed. Try sudo ./prog1702\n");
+    fprintf(stderr, "initInterrupt() failed. Try sudo ./read4001\n");
     exit(1);
   }
 
-  //disableInterrupt();
+  disableInterrupt();
 
   initCycle();
   
@@ -300,8 +302,8 @@ int main(int argc, char *argv[]){
   for(address = 0; address < MEMSIZE; address++){
     buf[address] = readMemory(chipnumber, address);
   }
-  //enableInterrupt();
   t_total = micros() - t_start;
+  enableInterrupt();
 
   fprintf(stderr, "%d(us), %lf(us/word)\n", (int)t_total, (double)t_total/MEMSIZE);
   
